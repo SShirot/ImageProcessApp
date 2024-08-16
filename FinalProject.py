@@ -60,13 +60,13 @@ class App(customtkinter.CTk):
         # Banner
         self.member = customtkinter.CTkLabel(self.info_frame, text="Member:",font=customtkinter.CTkFont(size=16, weight="bold"), compound="left",anchor="w")
         self.member.grid(row=0, column=0, sticky="nsew")
-        self.info = customtkinter.CTkLabel(self.info_frame, text="Le Hoang Lam",font=customtkinter.CTkFont(size=14, weight="normal"),compound="left",anchor="w")
+        self.info = customtkinter.CTkLabel(self.info_frame, text="Nguyen Khac Huy",font=customtkinter.CTkFont(size=14, weight="normal"),compound="left",anchor="w")
         self.info.grid(row=1, column=1, sticky="nsew")
-        self.info1 = customtkinter.CTkLabel(self.info_frame, text="Nguyen Hoang Nhan",font=customtkinter.CTkFont(size=14, weight="normal"),compound="left",anchor="w")
+        self.info1 = customtkinter.CTkLabel(self.info_frame, text="Nguyen Dang Khoa",font=customtkinter.CTkFont(size=14, weight="normal"),compound="left",anchor="w")
         self.info1.grid(row=2, column=1, sticky="nsew")
-        self.info2 = customtkinter.CTkLabel(self.info_frame, text="Nguyen Viet Anh",font=customtkinter.CTkFont(size=14, weight="normal"),compound="left",anchor="w")
+        self.info2 = customtkinter.CTkLabel(self.info_frame, text="Lam Nguyen Huy Hoang",font=customtkinter.CTkFont(size=14, weight="normal"),compound="left",anchor="w")
         self.info2.grid(row=3, column=1, sticky="nsew")
-        self.info3 = customtkinter.CTkLabel(self.info_frame, text="Le Y Thien",font=customtkinter.CTkFont(size=14, weight="normal"),compound="left",anchor="w")
+        self.info3 = customtkinter.CTkLabel(self.info_frame, text="Tu Hao Thien",font=customtkinter.CTkFont(size=14, weight="normal"),compound="left",anchor="w")
         self.info3.grid(row=4, column=1,  sticky="nsew")
 
         # configure grid layout (4x4)
@@ -81,7 +81,7 @@ class App(customtkinter.CTk):
         self.sidebar_frame.grid(row=0, column=0, rowspan=4, sticky="nsew") #"nsew" có nghĩa là widget con sẽ giãn ra theo phương ngang và dọc của ô đặt của widget cha.
         self.sidebar_frame.grid_rowconfigure(7, weight=1) #5 is max row in 1 grid column
 
-        self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, image=avatar,text=" Bdobe Lightroom",compound="left", font=customtkinter.CTkFont(size=20, weight="bold"))
+        self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, image=avatar,text="",compound="left", font=customtkinter.CTkFont(size=20, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
 
         self.sidebar_button_open_image = customtkinter.CTkButton(self.sidebar_frame, image=open,text="Open Image",command=self.open_file, text_color	 ="white")
@@ -155,7 +155,7 @@ class App(customtkinter.CTk):
         self.handle_img_frame.grid(row=0,column=3,padx=20,pady=(10,10))
 
         self.optionmenu_1 = customtkinter.CTkOptionMenu(self.handle_img_frame, dynamic_resizing=False,
-                                                values=["Brightness", "Contrast", "Noise", "Laplacian", "Gaussian Lowpass", "Gaussian Highpass", "Butterworth", "Erode", "Dilate"],
+                                                values=["Flare", "Contrast", "Noise", "Laplacian", "Gaussian Lowpass", "Gaussian Highpass", "Butterworth", "Erode", "Dilate"],
                                                 command=self.switch_tab_event)
         self.optionmenu_1.grid(row=0, column=3, padx=(20, 0), pady=(20, 0), sticky="nsew")
         self.optionmenu_1.set("Select Filter")
@@ -338,7 +338,7 @@ class App(customtkinter.CTk):
             self.drawing = False
             # Set the Slider back to 0
             current_option = self.optionmenu_1.get()
-            if current_option == "Brightness":
+            if current_option == "Flare":
                 self.slider_Log.set(25)
             if current_option == "Contrast":
                 self.slider_Gamma.set(10)
@@ -521,7 +521,7 @@ class App(customtkinter.CTk):
         t = int(log_erode)
 
         if t != 0:
-            threshval = 100; n = 255;
+            threshval = 100; n = 255
             _, imgB = cv2.threshold(imgg, threshval, n, cv2.THRESH_BINARY)
 
             kernel1 = np.ones((t,t), np.uint8)
@@ -662,7 +662,7 @@ class App(customtkinter.CTk):
     #main function
     
     def switch_tab_event(self, value):
-        if value == "Brightness":
+        if value == "Flare":
             self.brightness_frame.tkraise()
             self.contrast_frame.lower()
             self.noise_frame.lower()
@@ -926,60 +926,52 @@ class App(customtkinter.CTk):
             self.show_image()
 
     def gaussian_lowpass(self, *args):
-        if self.img_path == None:
+        if self.img_path is None:
             return 0
-
         t = int(self.slider_gaussian_lowpass.get())
-
         if t != 0:
             img = self.temp_image
-            if img.ndim != 2:
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            F = np.fft.fft2(img)
-            F = np.fft.fftshift(F)
-            M, N = img.shape
+            F = np.fft.fft2(img, axes=(0, 1))  # Apply FFT separately on each color channel
+            F = np.fft.fftshift(F, axes=(0, 1))
+            M, N, C = img.shape
             D0 = t
-
-            u = np.arange(0,M) - M/2; 
-            v = np.arange(0,N) - N/2
-            [V,U] = np.meshgrid(v,u)
-            D = np.sqrt(np.power(U,2) + np.power(V,2))
-            H = np.array(D<=D0, 'float')
-            G=H*F
-
-            G=np.fft.ifftshift(G)
-            imgOut = np.real(np.fft.ifft2(G))
+            u = np.arange(0, M) - M / 2
+            v = np.arange(0, N) - N / 2
+            [V, U] = np.meshgrid(v, u)
+            D = np.sqrt(np.power(U, 2) + np.power(V, 2))
+            H = np.array(D <= D0, dtype='float')
+            H = np.stack([H] * C, axis=2)  # Replicate the filter for each color channel
+            G = H * F
+            G = np.fft.ifftshift(G, axes=(0, 1))
+            imgOut = np.real(np.fft.ifft2(G, axes=(0, 1)))
+            imgOut = np.abs(imgOut)  # Ensure the values are non-negative
+            imgOut = np.clip(imgOut, 0, 255).astype('uint8')  # Clip values to valid range [0, 255]
             self.changed_image = imgOut
-
             self.t_image = self.changed_image
             self.show_image()
 
     def gaussian_highpass(self, *args):
         if self.img_path == None:
             return 0
-
         t = int(self.slider_gaussian_highpass.get())
-
         if t != 0:
             img = self.temp_image
-            if img.ndim != 2:
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            F = np.fft.fft2(img)
-            F = np.fft.fftshift(F)
-            M, N = img.shape
+            F = np.fft.fft2(img, axes=(0, 1))  # Apply FFT separately on each color channel
+            F = np.fft.fftshift(F, axes=(0, 1))
+            M, N, C = img.shape
             D0 = t
-
-            u = np.arange(0,M) - M/2; 
-            v = np.arange(0,N) - N/2
-            [V,U] = np.meshgrid(v,u)
-            D = np.sqrt(np.power(U,2) + np.power(V,2))
+            u = np.arange(0, M) - M / 2
+            v = np.arange(0, N) - N / 2
+            [V, U] = np.meshgrid(v, u)
+            D = np.sqrt(np.power(U, 2) + np.power(V, 2))
             H = 1 - np.exp(-(D * D) / (2 * D0 * D0))
-            G=H*F
-
-            G=np.fft.ifftshift(G)
-            imgOut = np.real(np.fft.ifft2(G))
+            H = np.stack([H] * C, axis=2)  # Replicate the filter for each color channel
+            G = H * F
+            G = np.fft.ifftshift(G, axes=(0, 1))
+            imgOut = np.real(np.fft.ifft2(G, axes=(0, 1)))
+            imgOut = np.abs(imgOut)  # Ensure the values are non-negative
+            imgOut = np.clip(imgOut, 0, 255).astype('uint8')  # Clip values to valid range [0, 255]
             self.changed_image = imgOut
-
             self.t_image = self.changed_image
             self.show_image()
 
@@ -1013,7 +1005,7 @@ class App(customtkinter.CTk):
         t = int(self.slider_erode.get())
         if t != 0:
             img = self.temp_image
-            threshval = 100; n = 255;
+            threshval = 100; n = 255
             retval, imgB = cv2.threshold(img, threshval, n, cv2.THRESH_BINARY)
             kernel1 = np.ones((t,t), np.uint8)
             img_erol1 = cv2.erode(imgB, kernel1, iterations=1)
